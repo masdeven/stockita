@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { db, defaultSettings, seedCategories, seedProducts, seedSuppliers, seedTransactions } from '../db/database';
 import type { AppSettings, Category, Product, Supplier, Transaction } from '../types';
+import { createProduct, updateProduct as repoUpdateProduct } from '../db/repositories/products';
+import { createTransactionAtomically } from '../db/repositories/transactions';
 
 export type StockState = {
   products: Product[];
@@ -10,7 +12,7 @@ export type StockState = {
   settings: AppSettings;
   loading: boolean;
   initialize: () => Promise<void>;
-  addProduct: (product: Product) => Promise<void>;
+  addProduct: (product: Product, openingQty?: number) => Promise<void>;
   addTransaction: (transaction: Transaction) => Promise<void>;
   setTheme: (theme: AppSettings['theme']) => void;
   setSettings: (updater: Partial<AppSettings>) => void;
@@ -59,13 +61,48 @@ export const useStockitaStore = create<StockState>((set, get) => ({
       });
     }
   },
-  addProduct: async (product) => {
-    await db.products.put(product);
-    set((state) => ({ products: [...state.products.filter((item) => item.id !== product.id), product] }));
+  addProduct: async (product, openingQty = 0) => {
+    // create product and optional opening-stock transaction atomically
+    try {
+      await db.transaction('rw', db.products, db.transactions, async () => {
+        await createProduct(product);
+        if (openingQty && openingQty > 0) {
+          const txn: Transaction = {
+            id: crypto.randomUUID(),
+            type: 'in',
+            productId: product.id,
+            productSkuSnapshot: product.sku,
+            productNameSnapshot: product.name,
+            qty: openingQty,
+            stockBefore: 0,
+            stockAfter: openingQty,
+            price: product.costPrice || undefined,
+            reason: 'opening-stock',
+            date: Date.now(),
+            createdAt: Date.now()
+          };
+          await db.transactions.put(txn);
+        }
+      });
+
+      // refresh state from DB slice rather than optimistic append to ensure consistency
+      const [products, transactions] = await Promise.all([db.products.toArray(), db.transactions.orderBy('date').reverse().toArray()]);
+      set({ products, transactions });
+    } catch (err) {
+      console.error('Failed to add product', err);
+      throw err;
+    }
   },
   addTransaction: async (transaction) => {
-    await db.transactions.put(transaction);
-    set((state) => ({ transactions: [transaction, ...state.transactions.filter((item) => item.id !== transaction.id)] }));
+    try {
+      await createTransactionAtomically(transaction);
+      // refresh affected data
+      const [products, transactions] = await Promise.all([db.products.toArray(), db.transactions.orderBy('date').reverse().toArray()]);
+      set({ products, transactions });
+    } catch (err) {
+      console.error('Failed to add transaction', err);
+      throw err;
+    }
   },
   setTheme: (theme) => {
     set((state) => ({ settings: { ...state.settings, theme, updatedAt: Date.now() } }));
