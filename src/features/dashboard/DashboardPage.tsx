@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStockitaStore } from '../../store/useStockitaStore';
 import { formatCurrency, formatDate, getInventoryStatus } from '../../lib/format';
 import { Modal } from '../../components/ui/Modal';
-import { ArrowDownLeft, ArrowUpRight, AlertTriangle, PackageX, ExternalLink, Box } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, AlertTriangle, PackageX, ExternalLink, Box, Calendar, AlertCircle } from 'lucide-react';
 import type { Transaction, Product } from '../../types';
 
 export function DashboardPage() {
@@ -18,6 +18,44 @@ export function DashboardPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const chartScrollRef = useRef<HTMLDivElement>(null);
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const [isCustomRange, setIsCustomRange] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return d.toISOString().slice(0, 10);
+  });
+  const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  const handleSelectPreset = (period: '7H' | '30H' | '90H') => {
+    setIsCustomRange(false);
+    setDateError(null);
+    setActivePeriod(period);
+  };
+
+  const handleStartDateChange = (val: string) => {
+    if (!val) return;
+    if (customEndDate && val > customEndDate) {
+      setDateError('Tanggal mulai tidak boleh melebihi tanggal akhir');
+      return;
+    }
+    setDateError(null);
+    setCustomStartDate(val);
+    setIsCustomRange(true);
+  };
+
+  const handleEndDateChange = (val: string) => {
+    if (!val) return;
+    if (customStartDate && val < customStartDate) {
+      setDateError('Tanggal akhir tidak boleh lebih awal dari tanggal mulai');
+      return;
+    }
+    setDateError(null);
+    setCustomEndDate(val);
+    setIsCustomRange(true);
+  };
 
   // 1. Metric calculations
   const productCount = products.length;
@@ -49,10 +87,47 @@ export function DashboardPage() {
     return [...transactions].sort((a, b) => b.date - a.date || b.createdAt - a.createdAt).slice(0, 5);
   }, [transactions]);
 
-  // 4. Chart data generation based on activePeriod
-  const periodDays = activePeriod === '90H' ? 90 : activePeriod === '30H' ? 30 : 7;
+  // 4. Chart data generation based on activePeriod or Custom Range
   const chartData = useMemo(() => {
     const days: { dateLabel: string; inQty: number; outQty: number; timestamp: number }[] = [];
+
+    if (isCustomRange && customStartDate && customEndDate) {
+      const start = new Date(customStartDate + 'T00:00:00');
+      const end = new Date(customEndDate + 'T23:59:59');
+
+      if (start > end) return [];
+
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const totalDays = Math.min(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 365);
+
+      for (let i = 0; i < totalDays; i++) {
+        const d = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
+        const dateStr = d.toDateString();
+        const label = totalDays <= 7
+          ? d.toLocaleDateString('id-ID', { weekday: 'short' })
+          : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'numeric' });
+
+        let inQty = 0;
+        let outQty = 0;
+
+        for (const t of transactions) {
+          if (new Date(t.date).toDateString() === dateStr) {
+            if (t.type === 'in') inQty += t.qty;
+            else if (t.type === 'out') outQty += Math.abs(t.qty);
+          }
+        }
+
+        days.push({
+          dateLabel: label,
+          inQty,
+          outQty,
+          timestamp: d.getTime()
+        });
+      }
+      return days;
+    }
+
+    const periodDays = activePeriod === '90H' ? 90 : activePeriod === '30H' ? 30 : 7;
     const now = new Date();
 
     for (let i = periodDays - 1; i >= 0; i--) {
@@ -80,7 +155,14 @@ export function DashboardPage() {
       });
     }
     return days;
-  }, [transactions, periodDays]);
+  }, [transactions, activePeriod, isCustomRange, customStartDate, customEndDate]);
+
+  const dayColClass = useMemo(() => {
+    const len = chartData.length;
+    if (len > 45) return 'chart-day-col chart-day-col-90';
+    if (len > 10) return 'chart-day-col chart-day-col-30';
+    return 'chart-day-col chart-day-col-7';
+  }, [chartData.length]);
 
   const maxChartQty = useMemo(() => {
     const max = Math.max(...chartData.map((d) => Math.max(d.inQty, d.outQty)), 5);
@@ -91,7 +173,7 @@ export function DashboardPage() {
     if (chartScrollRef.current) {
       chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
     }
-  }, [activePeriod, chartData]);
+  }, [activePeriod, chartData, isCustomRange]);
 
   if (loading) {
     return (
@@ -141,23 +223,61 @@ export function DashboardPage() {
       <div className="content-grid">
         {/* Chart Section */}
         <section className="panel panel-chart">
-          <div className="section-header">
+          <div className="section-header chart-section-header">
             <div>
               <div className="section-title">Pergerakan Stok (Masuk vs Keluar)</div>
               <div className="caption">Kuantitas harian unit barang masuk dan keluar</div>
             </div>
-            <div className="segmented-control" role="group">
-              {(['7H', '30H', '90H'] as const).map((period) => (
-                <button
-                  key={period}
-                  className={`segment-btn ${activePeriod === period ? 'active' : ''}`}
-                  onClick={() => setActivePeriod(period)}
-                >
-                  {period}
-                </button>
-              ))}
+
+            <div className="chart-filter-controls">
+              {/* Preset 7H, 30H, 90H */}
+              <div className="segmented-control" role="group" aria-label="Preset rentang waktu">
+                {(['7H', '30H', '90H'] as const).map((period) => (
+                  <button
+                    key={period}
+                    className={`segment-btn ${!isCustomRange && activePeriod === period ? 'active' : ''}`}
+                    onClick={() => handleSelectPreset(period)}
+                  >
+                    {period}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Date Range with Calendar Icon */}
+              <div className={`custom-date-range-box ${isCustomRange ? 'active' : ''}`} title="Filter rentang tanggal kustom">
+                <Calendar size={14} className="calendar-icon" />
+                <div className="date-inputs-pair">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    max={customEndDate || todayStr}
+                    onChange={(e) => handleStartDateChange(e.target.value)}
+                    title="Tanggal Mulai"
+                    className="chart-date-input"
+                    aria-label="Tanggal Mulai"
+                  />
+                  <span className="date-dash">–</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    min={customStartDate}
+                    max={todayStr}
+                    onChange={(e) => handleEndDateChange(e.target.value)}
+                    title="Tanggal Akhir"
+                    className="chart-date-input"
+                    aria-label="Tanggal Akhir"
+                  />
+                </div>
+              </div>
             </div>
           </div>
+
+          {dateError && (
+            <div className="chart-date-error-banner">
+              <AlertCircle size={13} />
+              <span>{dateError}</span>
+            </div>
+          )}
 
           <div className="chart-legend">
             <div className="legend-items-wrap">
@@ -168,7 +288,7 @@ export function DashboardPage() {
                 <span className="legend-dot out-dot" /> Stok Keluar (−)
               </span>
             </div>
-            {activePeriod !== '7H' && (
+            {chartData.length > 7 && (
               <span className="chart-scroll-hint caption">
                 ← Geser horizontal untuk melihat riwayat sebelumnya
               </span>
@@ -180,15 +300,9 @@ export function DashboardPage() {
               {chartData.map((d, idx) => {
                 const inHeight = (d.inQty / maxChartQty) * 100;
                 const outHeight = (d.outQty / maxChartQty) * 100;
-                const colClass =
-                  activePeriod === '90H'
-                    ? 'chart-day-col chart-day-col-90'
-                    : activePeriod === '30H'
-                    ? 'chart-day-col chart-day-col-30'
-                    : 'chart-day-col chart-day-col-7';
 
                 return (
-                  <div key={idx} className={colClass} title={`${d.dateLabel}: Masuk ${d.inQty}, Keluar ${d.outQty}`}>
+                  <div key={idx} className={dayColClass} title={`${d.dateLabel}: Masuk ${d.inQty}, Keluar ${d.outQty}`}>
                     <div className="bars-pair">
                       <div
                         className="bar-item bar-in"

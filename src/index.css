@@ -425,6 +425,93 @@ a { color: var(--text-link); text-decoration: none; }
   overflow: hidden;
 }
 
+.chart-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chart-filter-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.custom-date-range-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 1px 8px;
+  height: 26px;
+  transition: all 0.12s ease;
+}
+
+.custom-date-range-box:hover {
+  border-color: var(--border-strong);
+}
+
+.custom-date-range-box.active {
+  background: var(--bg-selected);
+  border-color: var(--accent);
+}
+
+.custom-date-range-box .calendar-icon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.custom-date-range-box.active .calendar-icon {
+  color: var(--accent);
+}
+
+.date-inputs-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chart-date-input {
+  min-height: unset !important;
+  height: 22px;
+  padding: 0 4px !important;
+  font-size: 11px !important;
+  font-family: var(--font-sans);
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-primary);
+  outline: none !important;
+  cursor: pointer;
+}
+
+.chart-date-input:focus {
+  box-shadow: none !important;
+  color: var(--accent);
+}
+
+.date-dash {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.chart-date-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--negative-soft);
+  color: var(--negative);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
 .chart-legend {
   display: flex;
   align-items: center;
@@ -977,6 +1064,27 @@ textarea { min-height: 72px; resize: vertical; }
   }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .content-grid { grid-template-columns: 1fr; }
+  .chart-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .chart-filter-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .custom-date-range-box {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .date-inputs-pair {
+    flex: 1;
+    justify-content: space-between;
+  }
+  .chart-date-input {
+    flex: 1;
+    min-width: 90px;
+  }
   .settings-grid-layout { grid-template-columns: 1fr; }
   .form-grid.two-col { grid-template-columns: 1fr; }
   .product-layout-wrap { flex-direction: column; }
