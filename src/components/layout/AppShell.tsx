@@ -7,6 +7,7 @@ import { CommandPalette } from '../CommandPalette';
 import { ToastContainer } from '../ui/Toast';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Modal } from '../ui/Modal';
+import { DateRangeModal } from '../ui/DateRangeModal';
 import {
   BarChart3,
   Box,
@@ -22,7 +23,8 @@ import {
   Sun,
   Moon,
   Download,
-  Plus
+  Plus,
+  Calendar
 } from 'lucide-react';
 
 interface AppShellProps {
@@ -35,6 +37,8 @@ export function AppShell({ children }: AppShellProps) {
   const setTheme = useStockitaStore((s) => s.setTheme);
   const activePeriod = useStockitaStore((s) => s.activePeriod);
   const setActivePeriod = useStockitaStore((s) => s.setActivePeriod);
+  const customDateRange = useStockitaStore((s) => s.customDateRange);
+  const setDateRangeModalOpen = useStockitaStore((s) => s.setDateRangeModalOpen);
   const setCommandPaletteOpen = useStockitaStore((s) => s.setCommandPaletteOpen);
   const addToast = useStockitaStore((s) => s.addToast);
   const resetAllData = useStockitaStore((s) => s.resetAllData);
@@ -90,9 +94,12 @@ export function AppShell({ children }: AppShellProps) {
       {/* 1. TOP BAR 40px */}
       <header className="topbar-shell">
         <div className="topbar-left">
-          <div className="brand-logo" onClick={() => navigate('/')}>
-            <div className="brand-badge">S</div>
-            <span className="brand-title">Stockita</span>
+          <div className="brand-logo" onClick={() => navigate('/')} title="Kembali ke Dashboard">
+            <img
+              src="/logo-stockita.png"
+              alt="Stockita"
+              className="brand-logo-img"
+            />
           </div>
         </div>
 
@@ -188,13 +195,31 @@ export function AppShell({ children }: AppShellProps) {
                 {(['7H', '30H', '90H'] as const).map((period) => (
                   <button
                     key={period}
-                    className={`segment-btn ${activePeriod === period ? 'active' : ''}`}
+                    type="button"
+                    className={`segment-btn ${!customDateRange && activePeriod === period ? 'active' : ''}`}
                     onClick={() => setActivePeriod(period)}
                   >
                     {period}
                   </button>
                 ))}
               </div>
+
+              {/* Tombol Kalender Independen di Bottom Bar */}
+              <button
+                type="button"
+                className={`standalone-calendar-btn ${customDateRange ? 'active' : ''}`}
+                onClick={() => setDateRangeModalOpen(true)}
+                title={
+                  customDateRange
+                    ? `Rentang kustom aktif: ${customDateRange.startDate} s/d ${customDateRange.endDate} (Klik untuk ubah)`
+                    : 'Pilih rentang tanggal khusus'
+                }
+                aria-label="Pilih rentang tanggal khusus"
+              >
+                <Calendar size={13} />
+                {customDateRange && <span className="calendar-active-dot" />}
+              </button>
+
               <span className="bottombar-chip">{settings.currency || 'IDR'}</span>
             </div>
 
@@ -301,6 +326,7 @@ export function AppShell({ children }: AppShellProps) {
       </Modal>
 
       {/* Global Overlays */}
+      <DateRangeModal />
       <CommandPalette />
       <ToastContainer />
 

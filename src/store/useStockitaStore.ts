@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db, defaultSettings, seedCategories, seedProducts, seedSuppliers, seedTransactions } from '../db/database';
-import type { AppSettings, Category, Period, Product, Supplier, ToastItem, Transaction } from '../types';
+import type { AppSettings, Category, CustomDateRange, Period, Product, Supplier, ToastItem, Transaction } from '../types';
 import { createProduct, updateProduct as repoUpdateProduct, deleteProduct as repoDeleteProduct } from '../db/repositories/products';
 import { createTransactionAtomically } from '../db/repositories/transactions';
 import { createCategory, updateCategory as repoUpdateCategory, deleteCategory as repoDeleteCategory } from '../db/repositories/categories';
@@ -16,6 +16,8 @@ export type StockState = {
   settings: AppSettings;
   loading: boolean;
   activePeriod: Period;
+  customDateRange: CustomDateRange | null;
+  dateRangeModalOpen: boolean;
   toasts: ToastItem[];
   commandPaletteOpen: boolean;
   selectedProductId: string | null;
@@ -35,6 +37,8 @@ export type StockState = {
   setTheme: (theme: AppSettings['theme']) => void;
   setSettings: (updater: Partial<AppSettings>) => void;
   setActivePeriod: (period: Period) => void;
+  setCustomDateRange: (range: CustomDateRange | null) => void;
+  setDateRangeModalOpen: (open: boolean) => void;
   addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   setCommandPaletteOpen: (open: boolean) => void;
@@ -51,6 +55,8 @@ export const useStockitaStore = create<StockState>((set, get) => ({
   settings: defaultSettings,
   loading: true,
   activePeriod: '7H',
+  customDateRange: null,
+  dateRangeModalOpen: false,
   toasts: [],
   commandPaletteOpen: false,
   selectedProductId: null,
@@ -302,7 +308,15 @@ export const useStockitaStore = create<StockState>((set, get) => ({
   },
 
   setActivePeriod: (period) => {
-    set({ activePeriod: period });
+    set({ activePeriod: period, customDateRange: null });
+  },
+
+  setCustomDateRange: (range) => {
+    set({ customDateRange: range });
+  },
+
+  setDateRangeModalOpen: (open) => {
+    set({ dateRangeModalOpen: open });
   },
 
   addToast: (message, type = 'info') => {

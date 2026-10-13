@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStockitaStore } from '../../store/useStockitaStore';
 import { formatCurrency, formatDate, getInventoryStatus } from '../../lib/format';
 import { Modal } from '../../components/ui/Modal';
-import { ArrowDownLeft, ArrowUpRight, AlertTriangle, PackageX, ExternalLink, Box, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, AlertTriangle, PackageX, ExternalLink, Box, Calendar, Plus } from 'lucide-react';
 import type { Transaction, Product } from '../../types';
 
 export function DashboardPage() {
@@ -12,50 +12,14 @@ export function DashboardPage() {
   const transactions = useStockitaStore((s) => s.transactions);
   const activePeriod = useStockitaStore((s) => s.activePeriod);
   const setActivePeriod = useStockitaStore((s) => s.setActivePeriod);
+  const customDateRange = useStockitaStore((s) => s.customDateRange);
+  const setDateRangeModalOpen = useStockitaStore((s) => s.setDateRangeModalOpen);
   const loading = useStockitaStore((s) => s.loading);
 
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const chartScrollRef = useRef<HTMLDivElement>(null);
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
-  const [isCustomRange, setIsCustomRange] = useState(false);
-  const [customStartDate, setCustomStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 14);
-    return d.toISOString().slice(0, 10);
-  });
-  const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [dateError, setDateError] = useState<string | null>(null);
-
-  const handleSelectPreset = (period: '7H' | '30H' | '90H') => {
-    setIsCustomRange(false);
-    setDateError(null);
-    setActivePeriod(period);
-  };
-
-  const handleStartDateChange = (val: string) => {
-    if (!val) return;
-    if (customEndDate && val > customEndDate) {
-      setDateError('Tanggal mulai tidak boleh melebihi tanggal akhir');
-      return;
-    }
-    setDateError(null);
-    setCustomStartDate(val);
-    setIsCustomRange(true);
-  };
-
-  const handleEndDateChange = (val: string) => {
-    if (!val) return;
-    if (customStartDate && val < customStartDate) {
-      setDateError('Tanggal akhir tidak boleh lebih awal dari tanggal mulai');
-      return;
-    }
-    setDateError(null);
-    setCustomEndDate(val);
-    setIsCustomRange(true);
-  };
 
   // 1. Metric calculations
   const productCount = products.length;
@@ -91,40 +55,40 @@ export function DashboardPage() {
   const chartData = useMemo(() => {
     const days: { dateLabel: string; inQty: number; outQty: number; timestamp: number }[] = [];
 
-    if (isCustomRange && customStartDate && customEndDate) {
-      const start = new Date(customStartDate + 'T00:00:00');
-      const end = new Date(customEndDate + 'T23:59:59');
+    if (customDateRange && customDateRange.startDate && customDateRange.endDate) {
+      const start = new Date(customDateRange.startDate + 'T00:00:00');
+      const end = new Date(customDateRange.endDate + 'T23:59:59');
 
-      if (start > end) return [];
+      if (start <= end) {
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const totalDays = Math.min(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 365);
 
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      const totalDays = Math.min(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 365);
+        for (let i = 0; i < totalDays; i++) {
+          const d = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
+          const dateStr = d.toDateString();
+          const label = totalDays <= 7
+            ? d.toLocaleDateString('id-ID', { weekday: 'short' })
+            : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'numeric' });
 
-      for (let i = 0; i < totalDays; i++) {
-        const d = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
-        const dateStr = d.toDateString();
-        const label = totalDays <= 7
-          ? d.toLocaleDateString('id-ID', { weekday: 'short' })
-          : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'numeric' });
+          let inQty = 0;
+          let outQty = 0;
 
-        let inQty = 0;
-        let outQty = 0;
-
-        for (const t of transactions) {
-          if (new Date(t.date).toDateString() === dateStr) {
-            if (t.type === 'in') inQty += t.qty;
-            else if (t.type === 'out') outQty += Math.abs(t.qty);
+          for (const t of transactions) {
+            if (new Date(t.date).toDateString() === dateStr) {
+              if (t.type === 'in') inQty += t.qty;
+              else if (t.type === 'out') outQty += Math.abs(t.qty);
+            }
           }
-        }
 
-        days.push({
-          dateLabel: label,
-          inQty,
-          outQty,
-          timestamp: d.getTime()
-        });
+          days.push({
+            dateLabel: label,
+            inQty,
+            outQty,
+            timestamp: d.getTime()
+          });
+        }
+        return days;
       }
-      return days;
     }
 
     const periodDays = activePeriod === '90H' ? 90 : activePeriod === '30H' ? 30 : 7;
@@ -155,7 +119,7 @@ export function DashboardPage() {
       });
     }
     return days;
-  }, [transactions, activePeriod, isCustomRange, customStartDate, customEndDate]);
+  }, [transactions, activePeriod, customDateRange]);
 
   const dayColClass = useMemo(() => {
     const len = chartData.length;
@@ -173,7 +137,7 @@ export function DashboardPage() {
     if (chartScrollRef.current) {
       chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
     }
-  }, [activePeriod, chartData, isCustomRange]);
+  }, [activePeriod, chartData, customDateRange]);
 
   if (loading) {
     return (
@@ -235,49 +199,32 @@ export function DashboardPage() {
                 {(['7H', '30H', '90H'] as const).map((period) => (
                   <button
                     key={period}
-                    className={`segment-btn ${!isCustomRange && activePeriod === period ? 'active' : ''}`}
-                    onClick={() => handleSelectPreset(period)}
+                    type="button"
+                    className={`segment-btn ${!customDateRange && activePeriod === period ? 'active' : ''}`}
+                    onClick={() => setActivePeriod(period)}
                   >
                     {period}
                   </button>
                 ))}
               </div>
 
-              {/* Custom Date Range with Calendar Icon */}
-              <div className={`custom-date-range-box ${isCustomRange ? 'active' : ''}`} title="Filter rentang tanggal kustom">
-                <Calendar size={14} className="calendar-icon" />
-                <div className="date-inputs-pair">
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    max={customEndDate || todayStr}
-                    onChange={(e) => handleStartDateChange(e.target.value)}
-                    title="Tanggal Mulai"
-                    className="chart-date-input"
-                    aria-label="Tanggal Mulai"
-                  />
-                  <span className="date-dash">–</span>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    min={customStartDate}
-                    max={todayStr}
-                    onChange={(e) => handleEndDateChange(e.target.value)}
-                    title="Tanggal Akhir"
-                    className="chart-date-input"
-                    aria-label="Tanggal Akhir"
-                  />
-                </div>
-              </div>
+              {/* Tombol Kalender Independen */}
+              <button
+                type="button"
+                className={`standalone-calendar-btn ${customDateRange ? 'active' : ''}`}
+                onClick={() => setDateRangeModalOpen(true)}
+                title={
+                  customDateRange
+                    ? `Rentang kustom aktif: ${customDateRange.startDate} s/d ${customDateRange.endDate} (Klik untuk ubah)`
+                    : 'Pilih rentang tanggal khusus'
+                }
+                aria-label="Pilih rentang tanggal khusus"
+              >
+                <Calendar size={14} />
+                {customDateRange && <span className="calendar-active-dot" />}
+              </button>
             </div>
           </div>
-
-          {dateError && (
-            <div className="chart-date-error-banner">
-              <AlertCircle size={13} />
-              <span>{dateError}</span>
-            </div>
-          )}
 
           <div className="chart-legend">
             <div className="legend-items-wrap">
@@ -288,11 +235,6 @@ export function DashboardPage() {
                 <span className="legend-dot out-dot" /> Stok Keluar (−)
               </span>
             </div>
-            {chartData.length > 7 && (
-              <span className="chart-scroll-hint caption">
-                ← Geser horizontal untuk melihat riwayat sebelumnya
-              </span>
-            )}
           </div>
 
           <div className="chart-canvas-box" ref={chartScrollRef}>
@@ -558,7 +500,7 @@ export function DashboardPage() {
                   setSelectedProduct(null);
                 }}
               >
-                + Tambah Stok Masuk
+                <Plus size={14} /> Tambah Stok Masuk
               </button>
             </div>
           </div>

@@ -89,7 +89,7 @@ export function SuppliersPage() {
             <div className="caption">Daftar pemasok barang dan mitra pengadaan stok</div>
           </div>
           <button className="button primary" onClick={openAddModal}>
-            <Plus size={16} /> + Tambah Supplier
+            <Plus size={16} /> Tambah Supplier
           </button>
         </div>
       </div>

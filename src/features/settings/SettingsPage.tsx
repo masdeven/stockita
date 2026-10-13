@@ -340,7 +340,8 @@ export function SettingsPage() {
               <strong>Pulihkan Cadangan (Import JSON)</strong>
               <p className="caption">Menggantikan data yang ada dengan data cadangan yang valid.</p>
               <label className="button secondary file-upload-btn">
-                <Upload size={14} /> Pilih File Backup JSON…
+                <Upload size={14} />
+                <span>Pilih File Backup JSON…</span>
                 <input
                   type="file"
                   accept=".json,application/json"
@@ -384,7 +385,7 @@ export function SettingsPage() {
               <div className="section-title">Tentang Stockita & Status Sistem</div>
             </div>
           </div>
-          <div className="info-list">
+          <div className="info-list system-status-list">
             <div className="info-row">
               <span className="caption">Versi Aplikasi</span>
               <strong className="data">Stockita v1.2 (Client-Side Only)</strong>
@@ -392,7 +393,8 @@ export function SettingsPage() {
             <div className="info-row">
               <span className="caption">Status Penyimpanan IndexedDB</span>
               <span className="badge-status-pos">
-                <CheckCircle2 size={14} /> Tersambung & Aktif (Dexie 4.x)
+                <CheckCircle2 size={14} />
+                <span>Tersambung & Aktif (Dexie 4.x)</span>
               </span>
             </div>
             <div className="info-row">

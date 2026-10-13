@@ -92,7 +92,7 @@ export function CategoriesPage() {
             <div className="caption">Kelompokkan produk inventori untuk pengorganisasian yang rapi</div>
           </div>
           <button className="button primary" onClick={openAddModal}>
-            <Plus size={16} /> + Tambah Kategori
+            <Plus size={16} /> Tambah Kategori
           </button>
         </div>
       </div>

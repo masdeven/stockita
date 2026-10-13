@@ -3,6 +3,11 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 export type TokenColor = 'accent' | 'positive' | 'negative' | 'warning' | 'subtle';
 export type Period = '7H' | '30H' | '90H';
 
+export interface CustomDateRange {
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+}
+
 export interface StoreProfile {
   storeName: string;
   logo?: string;

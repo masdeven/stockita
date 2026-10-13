@@ -324,7 +324,7 @@ export function ProductPage() {
               </button>
               <button className="button primary" onClick={openAddModal}>
                 <Plus size={16} />
-                <span>+ Tambah Produk</span>
+                <span>Tambah Produk</span>
               </button>
             </div>
           </div>
