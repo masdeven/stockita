@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStockitaStore } from '../../store/useStockitaStore';
+import type { Transaction } from '../../types';
 
 export function TransactionPage() {
   const products = useStockitaStore((state) => state.products);
@@ -27,7 +28,7 @@ export function TransactionPage() {
     }
 
     const productQty = form.type === 'in' ? product.stock + qty : product.stock - qty;
-    const transaction = {
+    const transaction: Transaction = {
       id: crypto.randomUUID(),
       type: form.type,
       productId: product.id,

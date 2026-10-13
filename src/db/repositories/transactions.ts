@@ -1,4 +1,4 @@
-import { db } from '../db/database';
+import { db } from '../database';
 import type { Transaction } from '../../types';
 
 export async function createTransactionAtomically(tx: Transaction) {

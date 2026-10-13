@@ -1,6 +1,6 @@
-import { db } from '../db/database';
-import type { Product, Transaction } from '../types';
-import { normalizeSku } from '../lib/format';
+import { db } from '../database';
+import type { Product, Transaction } from '../../types';
+import { normalizeSku } from '../../lib/format';
 
 export async function ensureUniqueSku(sku: string, excludeId?: string) {
   const normalized = normalizeSku(sku);

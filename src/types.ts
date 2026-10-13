@@ -1,5 +1,14 @@
 export type TransactionType = 'in' | 'out' | 'adjust';
 export type ThemeMode = 'light' | 'dark' | 'system';
+export type TokenColor = 'accent' | 'positive' | 'negative' | 'warning' | 'subtle';
+export type Period = '7H' | '30H' | '90H';
+
+export interface StoreProfile {
+  storeName: string;
+  logo?: string;
+  address?: string;
+  contact?: string;
+}
 
 export interface Product {
   id: string;
@@ -14,6 +23,7 @@ export interface Product {
   minStock: number;
   location?: string;
   note?: string;
+  image?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -22,7 +32,7 @@ export interface Category {
   id: string;
   name: string;
   description?: string;
-  color: 'accent' | 'positive' | 'negative' | 'warning' | 'subtle';
+  color: TokenColor;
   createdAt: number;
   updatedAt: number;
 }
@@ -56,10 +66,12 @@ export interface Transaction {
 }
 
 export interface AppSettings {
+  profile?: StoreProfile;
   currency: string;
   dateFormat: 'locale' | 'dd/MM/yyyy' | 'yyyy-MM-dd';
   lowStockThreshold: number;
   theme: ThemeMode;
+  schemaVersion?: number;
   updatedAt: number;
 }
 
@@ -67,4 +79,10 @@ export interface InventoryStatus {
   status: 'Habis' | 'Rendah' | 'Normal';
   stock: number;
   minStock: number;
+}
+
+export interface ToastItem {
+  id: string;
+  type: 'success' | 'error' | 'info';
+  message: string;
 }

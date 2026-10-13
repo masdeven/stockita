@@ -57,3 +57,31 @@ export function normalizeSku(value: string) {
 export function isValidSku(value: string) {
   return normalizeSku(value).length > 0 && value.trim().length <= 64;
 }
+
+export function formatDate(timestamp: number, format = 'locale', includeTime = true) {
+  if (!timestamp) return '—';
+  const d = new Date(timestamp);
+  if (format === 'yyyy-MM-dd') {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    if (!includeTime) return dateStr;
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dateStr} ${hh}:${min}`;
+  }
+  if (format === 'dd/MM/yyyy') {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${dd}/${mm}/${yyyy}`;
+    if (!includeTime) return dateStr;
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dateStr} ${hh}:${min}`;
+  }
+  return includeTime 
+    ? d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+    : d.toLocaleDateString('id-ID', { dateStyle: 'medium' });
+}
