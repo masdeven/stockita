@@ -1,16 +1,15 @@
-import { useLocation, NavLink } from 'react-router-dom';
-import { BarChart3, Boxes, Package2, Settings, ArrowLeftRight } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { NavLink } from 'react-router-dom';
+import { BarChart3, Box, ArrowLeftRight, Settings } from 'lucide-react';
 
-const navItems = [
+const items = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
-  { to: '/products', label: 'Produk', icon: Package2 },
+  { to: '/products', label: 'Produk', icon: Box },
   { to: '/transactions', label: 'Transaksi', icon: ArrowLeftRight },
   { to: '/settings', label: 'Pengaturan', icon: Settings }
 ];
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-
+export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -20,7 +19,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="nav-stack">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {items.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
               <Icon size={18} />
               <span>{label}</span>
@@ -31,15 +30,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="main-panel">
         <header className="topbar">
-          <div className="searchbox">
-            <span>Cari produk, SKU, atau menu…</span>
-          </div>
+          <div className="searchbox">Cari produk, SKU, atau menu…</div>
           <div className="topbar-actions">
             <button className="button secondary">Tema</button>
             <button className="button primary cta">Export Backup</button>
           </div>
         </header>
-
         <div className="content-wrap">{children}</div>
       </main>
     </div>

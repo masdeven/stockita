@@ -1,7 +1,7 @@
-import { useStockitaStore, useStockitaData } from '../../store/useStockitaStore';
+import { useStockitaStore } from '../../store/useStockitaStore';
 
-export default function SettingsPage() {
-  const settings = useStockitaData().settings;
+export function SettingsPage() {
+  const settings = useStockitaStore((state) => state.settings);
   const setTheme = useStockitaStore((state) => state.setTheme);
 
   return (
@@ -10,7 +10,7 @@ export default function SettingsPage() {
         <div className="section-title">Pengaturan</div>
         <div className="form-grid two-col">
           <label>
-            Currency
+            Mata uang
             <input value={settings.currency} readOnly />
           </label>
           <label>

@@ -1,81 +1,78 @@
 import { create } from 'zustand';
 import { db, defaultSettings, seedCategories, seedProducts, seedSuppliers, seedTransactions } from '../db/database';
-import { calculateInventoryValue, formatCurrency, getInventoryStatus } from '../lib/format';
-import { AppSettings, Category, Product, Supplier, Transaction } from '../types';
+import type { AppSettings, Category, Product, Supplier, Transaction } from '../types';
 
-type StoreState = {
+export type StockState = {
   products: Product[];
   categories: Category[];
   suppliers: Supplier[];
   transactions: Transaction[];
   settings: AppSettings;
-  addProduct: (product: Product) => void;
-  addTransaction: (transaction: Transaction) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (id: string) => void;
+  loading: boolean;
+  initialize: () => Promise<void>;
+  addProduct: (product: Product) => Promise<void>;
+  addTransaction: (transaction: Transaction) => Promise<void>;
   setTheme: (theme: AppSettings['theme']) => void;
-  initialize: () => void;
+  setSettings: (updater: Partial<AppSettings>) => void;
 };
 
-const initialProducts = [...seedProducts];
-const initialCategories = [...seedCategories];
-const initialSuppliers = [...seedSuppliers];
-const initialTransactions = [...seedTransactions];
-
-export const useStockitaStore = create<StoreState>((set, get) => ({
-  products: initialProducts,
-  categories: initialCategories,
-  suppliers: initialSuppliers,
-  transactions: initialTransactions,
+export const useStockitaStore = create<StockState>((set, get) => ({
+  products: [],
+  categories: [],
+  suppliers: [],
+  transactions: [],
   settings: defaultSettings,
-  initialize: () => {
-    const current = get();
-    set({
-      products: current.products.length ? current.products : initialProducts,
-      categories: current.categories.length ? current.categories : initialCategories,
-      suppliers: current.suppliers.length ? current.suppliers : initialSuppliers,
-      transactions: current.transactions.length ? current.transactions : initialTransactions,
-      settings: current.settings ?? defaultSettings
-    });
+  loading: true,
+  initialize: async () => {
+    try {
+      const [products, categories, suppliers, transactions, settings] = await Promise.all([
+        db.products.toArray(),
+        db.categories.toArray(),
+        db.suppliers.toArray(),
+        db.transactions.orderBy('date').reverse().toArray(),
+        db.settings.toArray()
+      ]);
+
+      const nextProducts = products.length ? products : seedProducts;
+      const nextCategories = categories.length ? categories : seedCategories;
+      const nextSuppliers = suppliers.length ? suppliers : seedSuppliers;
+      const nextTransactions = transactions.length ? transactions : seedTransactions;
+      const nextSettings = settings.length ? settings[0] : defaultSettings;
+
+      set({
+        products: nextProducts,
+        categories: nextCategories,
+        suppliers: nextSuppliers,
+        transactions: nextTransactions,
+        settings: nextSettings,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Failed to initialize Stockita', error);
+      set({
+        products: seedProducts,
+        categories: seedCategories,
+        suppliers: seedSuppliers,
+        transactions: seedTransactions,
+        settings: defaultSettings,
+        loading: false
+      });
+    }
   },
-  addProduct: (product) => set((state) => ({ products: [...state.products, product] })),
-  addTransaction: (transaction) => set((state) => ({ transactions: [transaction, ...state.transactions] })),
-  updateProduct: (product) => set((state) => ({ products: state.products.map((item) => item.id === product.id ? product : item) })),
-  deleteProduct: (id) => set((state) => ({ products: state.products.filter((product) => product.id !== id) })),
-  setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme, updatedAt: Date.now() } }))
+  addProduct: async (product) => {
+    await db.products.put(product);
+    set((state) => ({ products: [...state.products.filter((item) => item.id !== product.id), product] }));
+  },
+  addTransaction: async (transaction) => {
+    await db.transactions.put(transaction);
+    set((state) => ({ transactions: [transaction, ...state.transactions.filter((item) => item.id !== transaction.id)] }));
+  },
+  setTheme: (theme) => {
+    set((state) => ({ settings: { ...state.settings, theme, updatedAt: Date.now() } }));
+    db.settings.put({ ...get().settings, theme, updatedAt: Date.now() });
+  },
+  setSettings: (updater) => {
+    set((state) => ({ settings: { ...state.settings, ...updater, updatedAt: Date.now() } }));
+    db.settings.put({ ...get().settings, ...updater, updatedAt: Date.now() });
+  }
 }));
-
-export function useStockitaMetrics() {
-  const products = useStockitaStore((state) => state.products);
-  const transactions = useStockitaStore((state) => state.transactions);
-
-  const productCount = products.length;
-  const inventoryValue = calculateInventoryValue(products);
-  const lowStockCount = products.filter((product) => getInventoryStatus(product).status === 'Rendah').length;
-  const emptyStockCount = products.filter((product) => getInventoryStatus(product).status === 'Habis').length;
-
-  const today = new Date();
-  const todayTransactions = transactions.filter((transaction) => {
-    const date = new Date(transaction.date);
-    return date.toDateString() === today.toDateString();
-  }).length;
-
-  return {
-    productCount,
-    inventoryValue,
-    lowStockCount,
-    emptyStockCount,
-    todayTransactions,
-    stockValueText: formatCurrency(inventoryValue)
-  };
-}
-
-export function useStockitaData() {
-  return {
-    products: useStockitaStore((state) => state.products),
-    transactions: useStockitaStore((state) => state.transactions),
-    categories: useStockitaStore((state) => state.categories),
-    suppliers: useStockitaStore((state) => state.suppliers),
-    settings: useStockitaStore((state) => state.settings)
-  };
-}

@@ -1,5 +1,5 @@
-import Dexie, { Table } from 'dexie';
-import { AppSettings, Category, Product, Supplier, Transaction } from '../types';
+import Dexie, { type Table } from 'dexie';
+import type { AppSettings, Category, Product, Supplier, Transaction } from '../types';
 
 class StockitaDatabase extends Dexie {
   products!: Table<Product, string>;
@@ -15,7 +15,7 @@ class StockitaDatabase extends Dexie {
       products: '&id, sku, name, categoryId, supplierId, updatedAt',
       categories: '&id, name, updatedAt',
       suppliers: '&id, name, updatedAt',
-      transactions: '&id, date, createdAt, type, productId',
+      transactions: '&id, date, type, createdAt, productId',
       settings: '&currency, updatedAt'
     });
   }

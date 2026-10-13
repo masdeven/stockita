@@ -57,9 +57,9 @@ export interface Transaction {
 
 export interface AppSettings {
   currency: string;
-  theme: ThemeMode;
-  lowStockThreshold: number;
   dateFormat: 'locale' | 'dd/MM/yyyy' | 'yyyy-MM-dd';
+  lowStockThreshold: number;
+  theme: ThemeMode;
   updatedAt: number;
 }
 

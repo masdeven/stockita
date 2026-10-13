@@ -1,13 +1,11 @@
-import { Product } from '../../types';
-import { useStockitaData } from '../../store/useStockitaStore';
-import { formatCurrency, getInventoryStatus } from '../../lib/format';
 import { useMemo, useState } from 'react';
+import { formatCurrency, getInventoryStatus } from '../../lib/format';
+import { useStockitaStore } from '../../store/useStockitaStore';
+import type { Product } from '../../types';
 
-const blankProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
+const emptyForm = {
   sku: '',
   name: '',
-  categoryId: '',
-  supplierId: '',
   unit: 'pcs',
   costPrice: 0,
   sellPrice: 0,
@@ -17,31 +15,38 @@ const blankProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
   note: ''
 };
 
-export default function ProductPage() {
-  const { products } = useStockitaData();
-  const [form, setForm] = useState(blankProduct);
+export function ProductPage() {
+  const products = useStockitaStore((state) => state.products);
+  const addProduct = useStockitaStore((state) => state.addProduct);
+  const [form, setForm] = useState(emptyForm);
 
-  const rows = useMemo(() => {
-    return [...products].sort((a, b) => a.name.localeCompare(b.name));
-  }, [products]);
+  const rows = useMemo(() => [...products].sort((a, b) => a.name.localeCompare(b.name)), [products]);
 
-  const onChange = (field: keyof typeof blankProduct, value: string | number) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
+  const handleSubmit = async () => {
+    const sku = form.sku.trim();
+    const name = form.name.trim();
+    if (!sku || !name) {
+      alert('SKU dan nama produk wajib diisi.');
+      return;
+    }
 
-  const submit = () => {
     const product: Product = {
       id: crypto.randomUUID(),
+      sku,
+      name,
+      unit: form.unit || 'pcs',
+      costPrice: Number(form.costPrice) || 0,
+      sellPrice: Number(form.sellPrice) || 0,
+      stock: Number(form.stock) || 0,
+      minStock: Number(form.minStock) || 0,
+      location: form.location,
+      note: form.note,
       createdAt: Date.now(),
-      updatedAt: Date.now(),
-      ...form,
-      sku: form.sku.trim(),
-      name: form.name.trim()
+      updatedAt: Date.now()
     };
 
-    useStockitaData();
-    window.alert(`Produk ${product.name} ditambahkan (demo).`);
-    setForm(blankProduct);
+    await addProduct(product);
+    setForm(emptyForm);
   };
 
   return (
@@ -51,40 +56,44 @@ export default function ProductPage() {
         <div className="form-grid">
           <label>
             SKU
-            <input value={form.sku} onChange={(e) => onChange('sku', e.target.value)} />
+            <input value={form.sku} onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value }))} />
           </label>
           <label>
             Nama produk
-            <input value={form.name} onChange={(e) => onChange('name', e.target.value)} />
+            <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} />
           </label>
           <label>
             Satuan
-            <input value={form.unit} onChange={(e) => onChange('unit', e.target.value)} />
+            <input value={form.unit} onChange={(e) => setForm((prev) => ({ ...prev, unit: e.target.value }))} />
           </label>
           <label>
             Stok awal
-            <input type="number" value={form.stock} onChange={(e) => onChange('stock', Number(e.target.value))} />
+            <input type="number" value={form.stock} onChange={(e) => setForm((prev) => ({ ...prev, stock: Number(e.target.value) }))} />
           </label>
           <label>
             Harga beli
-            <input type="number" value={form.costPrice} onChange={(e) => onChange('costPrice', Number(e.target.value))} />
+            <input type="number" value={form.costPrice} onChange={(e) => setForm((prev) => ({ ...prev, costPrice: Number(e.target.value) }))} />
           </label>
           <label>
             Harga jual
-            <input type="number" value={form.sellPrice} onChange={(e) => onChange('sellPrice', Number(e.target.value))} />
+            <input type="number" value={form.sellPrice} onChange={(e) => setForm((prev) => ({ ...prev, sellPrice: Number(e.target.value) }))} />
           </label>
           <label>
             Lokasi
-            <input value={form.location ?? ''} onChange={(e) => onChange('location', e.target.value)} />
+            <input value={form.location} onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))} />
           </label>
           <label>
             Stok minimum
-            <input type="number" value={form.minStock} onChange={(e) => onChange('minStock', Number(e.target.value))} />
+            <input type="number" value={form.minStock} onChange={(e) => setForm((prev) => ({ ...prev, minStock: Number(e.target.value) }))} />
+          </label>
+          <label className="full-width">
+            Catatan
+            <textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} />
           </label>
         </div>
         <div className="actions-row">
-          <button className="button primary">Simpan</button>
-          <button className="button secondary" onClick={() => setForm(blankProduct)}>Reset</button>
+          <button className="button primary" onClick={handleSubmit}>Simpan</button>
+          <button className="button secondary" onClick={() => setForm(emptyForm)}>Reset</button>
         </div>
       </div>
 
@@ -100,7 +109,7 @@ export default function ProductPage() {
               <th>SKU</th>
               <th>Nama</th>
               <th>Stok</th>
-              <th>Harga</th>
+              <th>Harga Beli</th>
               <th>Status</th>
             </tr>
           </thead>

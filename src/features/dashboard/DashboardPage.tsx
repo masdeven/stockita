@@ -1,43 +1,52 @@
-import { useEffect } from 'react';
-import { BarChart3, Boxes, Package2, Settings, TrendingUp } from 'lucide-react';
-import { useStockitaMetrics } from '../store/useStockitaStore';
-import { formatCurrency } from '../lib/format';
+import { formatCurrency, getInventoryStatus } from '../lib/format';
+import { useStockitaStore } from './useStockitaStore';
 
-function StatCard({ label, value, meta }: { label: string; value: string; meta: string }) {
-  return (
-    <div className="stat-card">
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-      <div className="stat-meta">{meta}</div>
-    </div>
-  );
-}
+export function DashboardPage() {
+  const products = useStockitaStore((state) => state.products);
+  const transactions = useStockitaStore((state) => state.transactions);
+  const loading = useStockitaStore((state) => state.loading);
 
-export default function DashboardPage() {
-  const metrics = useStockitaMetrics();
+  const productCount = products.length;
+  const inventoryValue = products.reduce((sum, product) => sum + (product.stock > 0 ? product.stock * product.costPrice : 0), 0);
+  const lowStockCount = products.filter((product) => getInventoryStatus(product).status === 'Rendah').length;
+  const emptyStockCount = products.filter((product) => getInventoryStatus(product).status === 'Habis').length;
+  const today = new Date();
+  const todayTransactions = transactions.filter((transaction) => new Date(transaction.date).toDateString() === today.toDateString()).length;
 
-  useEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute('data-theme', 'light');
-  }, []);
+  const lowList = products.filter((product) => getInventoryStatus(product).status !== 'Normal').slice(0, 4);
+  const recent = [...transactions].sort((a, b) => b.date - a.date).slice(0, 5);
 
-  const recentTransactions = [
-    { id: 1, type: 'Stok Masuk', product: 'Laptop Mini', qty: '+10', value: 'Rp 82.000.000' },
-    { id: 2, type: 'Stok Keluar', product: 'Monitor 24"', qty: '-3', value: 'Rp 7.800.000' },
-    { id: 3, type: 'Penyesuaian', product: 'Laptop Mini', qty: '+2', value: '—' }
-  ];
+  if (loading) {
+    return <div className="panel">Memuat dashboard…</div>;
+  }
 
   return (
     <div className="page-shell">
       <div className="stats-grid">
-        <StatCard label="Total Produk" value={String(metrics.productCount)} meta="Master data aktif" />
-        <StatCard label="Nilai Stok" value={metrics.stockValueText} meta="Berdasarkan harga beli saat ini" />
-        <StatCard label="Stok Rendah" value={String(metrics.lowStockCount)} meta={`${metrics.emptyStockCount} habis`} />
-        <StatCard label="Transaksi Hari Ini" value={String(metrics.todayTransactions)} meta="Tanggal lokal" />
+        <div className="stat-card">
+          <div className="stat-label">Total Produk</div>
+          <div className="stat-value">{productCount}</div>
+          <div className="stat-meta">Master data aktif</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Nilai Stok</div>
+          <div className="stat-value">{formatCurrency(inventoryValue)}</div>
+          <div className="stat-meta">Berdasarkan harga beli saat ini</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Stok Rendah</div>
+          <div className="stat-value">{lowStockCount}</div>
+          <div className="stat-meta">{emptyStockCount} habis</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Transaksi Hari Ini</div>
+          <div className="stat-value">{todayTransactions}</div>
+          <div className="stat-meta">Tanggal lokal</div>
+        </div>
       </div>
 
       <div className="content-grid">
-        <section className="panel panel--wide">
+        <section className="panel panel-wide">
           <div className="section-header">
             <div className="section-title">Pergerakan stok</div>
             <div className="segmented">
@@ -46,11 +55,10 @@ export default function DashboardPage() {
               <button className="segment">90H</button>
             </div>
           </div>
-
           <div className="chart-box">
             <div className="chart-bars">
-              {[42, 58, 35, 74, 90, 52, 84].map((item, index) => (
-                <div key={index} className="chart-bar" style={{ height: `${item}%` }} />
+              {[42, 58, 35, 74, 90, 52, 84].map((value, index) => (
+                <div key={index} className="chart-bar" style={{ height: `${value}%` }} />
               ))}
             </div>
           </div>
@@ -59,20 +67,18 @@ export default function DashboardPage() {
         <aside className="panel">
           <div className="section-title">Stok rendah & habis</div>
           <div className="alert-list">
-            <div className="alert-item">
-              <Boxes size={16} />
-              <div>
-                <strong>Monitor 24&quot;</strong>
-                <small>2 tersisa</small>
-              </div>
-            </div>
-            <div className="alert-item danger">
-              <Package2 size={16} />
-              <div>
-                <strong>Keyboard Pro</strong>
-                <small>0 tersisa</small>
-              </div>
-            </div>
+            {lowList.map((product) => {
+              const status = getInventoryStatus(product);
+              return (
+                <div key={product.id} className={`alert-item ${status.status === 'Habis' ? 'danger' : ''}`}>
+                  <div className="dot" />
+                  <div>
+                    <strong>{product.name}</strong>
+                    <small>{status.stock} tersisa</small>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </aside>
       </div>
@@ -82,7 +88,6 @@ export default function DashboardPage() {
           <div className="section-title">Transaksi terbaru</div>
           <button className="text-button">Lihat semua</button>
         </div>
-
         <table className="data-table">
           <thead>
             <tr>
@@ -94,13 +99,13 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {recentTransactions.map((row) => (
-              <tr key={row.id}>
-                <td>13 Okt</td>
-                <td>{row.type}</td>
-                <td>{row.product}</td>
-                <td>{row.qty}</td>
-                <td>{row.value}</td>
+            {recent.map((tx) => (
+              <tr key={tx.id}>
+                <td>{new Date(tx.date).toLocaleDateString('id-ID')}</td>
+                <td>{tx.type}</td>
+                <td>{tx.productNameSnapshot}</td>
+                <td>{tx.qty > 0 ? `+${tx.qty}` : tx.qty}</td>
+                <td>{tx.price ? formatCurrency(tx.price * Math.abs(tx.qty)) : '—'}</td>
               </tr>
             ))}
           </tbody>

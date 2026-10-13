@@ -1,9 +1,9 @@
+import { AppShell } from './components/layout/AppShell';
+import { DashboardPage } from './features/dashboard/DashboardPage';
+import { ProductPage } from './features/products/ProductPage';
+import { TransactionPage } from './features/transactions/TransactionPage';
+import { SettingsPage } from './features/settings/SettingsPage';
 import { Route, Routes } from 'react-router-dom';
-import AppShell from './components/layout/AppShell';
-import DashboardPage from './features/dashboard/DashboardPage';
-import ProductPage from './features/products/ProductPage';
-import TransactionPage from './features/transactions/TransactionPage';
-import SettingsPage from './features/settings/SettingsPage';
 
 export default function App() {
   return (
