@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStockitaStore } from '../../store/useStockitaStore';
 import { formatCurrency, formatDate, getInventoryStatus } from '../../lib/format';
@@ -16,6 +16,8 @@ export function DashboardPage() {
 
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const chartScrollRef = useRef<HTMLDivElement>(null);
 
   // 1. Metric calculations
   const productCount = products.length;
@@ -85,6 +87,12 @@ export function DashboardPage() {
     return max;
   }, [chartData]);
 
+  useEffect(() => {
+    if (chartScrollRef.current) {
+      chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
+    }
+  }, [activePeriod, chartData]);
+
   if (loading) {
     return (
       <div className="page-shell">
@@ -152,22 +160,35 @@ export function DashboardPage() {
           </div>
 
           <div className="chart-legend">
-            <span className="legend-item">
-              <span className="legend-dot in-dot" /> Stok Masuk (+)
-            </span>
-            <span className="legend-item">
-              <span className="legend-dot out-dot" /> Stok Keluar (−)
-            </span>
+            <div className="legend-items-wrap">
+              <span className="legend-item">
+                <span className="legend-dot in-dot" /> Stok Masuk (+)
+              </span>
+              <span className="legend-item">
+                <span className="legend-dot out-dot" /> Stok Keluar (−)
+              </span>
+            </div>
+            {activePeriod !== '7H' && (
+              <span className="chart-scroll-hint caption">
+                ← Geser horizontal untuk melihat riwayat sebelumnya
+              </span>
+            )}
           </div>
 
-          <div className="chart-canvas-box">
+          <div className="chart-canvas-box" ref={chartScrollRef}>
             <div className="chart-bars-container">
               {chartData.map((d, idx) => {
                 const inHeight = (d.inQty / maxChartQty) * 100;
                 const outHeight = (d.outQty / maxChartQty) * 100;
+                const colClass =
+                  activePeriod === '90H'
+                    ? 'chart-day-col chart-day-col-90'
+                    : activePeriod === '30H'
+                    ? 'chart-day-col chart-day-col-30'
+                    : 'chart-day-col chart-day-col-7';
 
                 return (
-                  <div key={idx} className="chart-day-col" title={`${d.dateLabel}: Masuk ${d.inQty}, Keluar ${d.outQty}`}>
+                  <div key={idx} className={colClass} title={`${d.dateLabel}: Masuk ${d.inQty}, Keluar ${d.outQty}`}>
                     <div className="bars-pair">
                       <div
                         className="bar-item bar-in"
