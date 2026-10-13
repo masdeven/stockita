@@ -45,7 +45,7 @@ export function ProductPage() {
       updatedAt: Date.now()
     };
 
-    await addProduct(product);
+    await addProduct(product, Number(form.stock) || 0);
     setForm(emptyForm);
   };
 
@@ -136,3 +136,5 @@ export function ProductPage() {
     </div>
   );
 }
+
+export default ProductPage;

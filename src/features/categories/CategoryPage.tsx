@@ -5,30 +5,39 @@ import { createCategory, updateCategory, deleteCategory } from '../../db/reposit
 
 const empty: Partial<Category> = { name: '', description: '', color: 'accent' };
 
-export default function CategoryPage() {
+export function CategoryPage() {
   const categories = useStockitaStore((s) => s.categories);
   const initialize = useStockitaStore((s) => s.initialize);
   const [form, setForm] = useState<Partial<Category>>(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { initialize(); }, [initialize]);
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   const handleSave = async () => {
-    if (!form.name || !form.name.trim()) return alert('Nama kategori wajib.');
+    if (!form.name || !form.name.trim()) {
+      alert('Nama kategori wajib.');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload: Category = {
         id: editingId ?? crypto.randomUUID(),
-        name: form.name!.trim(),
+        name: form.name.trim(),
         description: form.description || '',
-        color: (form.color as any) || 'accent',
-        createdAt: editingId ? (categories.find(c => c.id === editingId)?.createdAt ?? Date.now()) : Date.now(),
+        color: (form.color as Category['color']) || 'accent',
+        createdAt: editingId ? categories.find((item) => item.id === editingId)?.createdAt ?? Date.now() : Date.now(),
         updatedAt: Date.now()
       };
 
-      if (editingId) await updateCategory(payload);
-      else await createCategory(payload);
+      if (editingId) {
+        await updateCategory(payload);
+      } else {
+        await createCategory(payload);
+      }
 
       await initialize();
       setForm(empty);
@@ -36,7 +45,9 @@ export default function CategoryPage() {
     } catch (err) {
       console.error(err);
       alert('Gagal menyimpan kategori');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (cat: Category) => {
@@ -45,12 +56,20 @@ export default function CategoryPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus kategori? Produk yang memakai kategori ini akan kehilangan relasi kategori.')) return;
+    if (!confirm('Hapus kategori? Produk yang memakai kategori ini akan kehilangan relasi kategori.')) {
+      return;
+    }
+
     setLoading(true);
     try {
       await deleteCategory(id);
       await initialize();
-    } catch (err) { console.error(err); alert('Gagal menghapus kategori'); } finally { setLoading(false); }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menghapus kategori');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,15 +79,15 @@ export default function CategoryPage() {
         <div className="form-grid">
           <label>
             Nama
-            <input value={form.name ?? ''} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <input value={form.name ?? ''} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} />
           </label>
           <label>
             Deskripsi
-            <input value={form.description ?? ''} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+            <input value={form.description ?? ''} onChange={(e) => setForm((current) => ({ ...current, description: e.target.value }))} />
           </label>
           <label>
             Warna badge
-            <select value={form.color ?? 'accent'} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value as any }))}>
+            <select value={form.color ?? 'accent'} onChange={(e) => setForm((current) => ({ ...current, color: e.target.value as Category['color'] }))}>
               <option value="accent">Accent</option>
               <option value="positive">Positive</option>
               <option value="warning">Warning</option>
@@ -78,8 +97,12 @@ export default function CategoryPage() {
           </label>
         </div>
         <div className="actions-row">
-          <button className="button primary" onClick={handleSave} disabled={loading}>{editingId ? 'Simpan Perubahan' : 'Tambah Kategori'}</button>
-          <button className="button secondary" onClick={() => { setForm(empty); setEditingId(null); }} disabled={loading}>Batal</button>
+          <button className="button primary" onClick={handleSave} disabled={loading}>
+            {editingId ? 'Simpan Perubahan' : 'Tambah Kategori'}
+          </button>
+          <button className="button secondary" onClick={() => { setForm(empty); setEditingId(null); }} disabled={loading}>
+            Batal
+          </button>
         </div>
       </div>
 
@@ -90,10 +113,14 @@ export default function CategoryPage() {
         </div>
         <table className="data-table">
           <thead>
-            <tr><th>Nama</th><th>Deskripsi</th><th></th></tr>
+            <tr>
+              <th>Nama</th>
+              <th>Deskripsi</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <tr key={cat.id}>
                 <td>{cat.name}</td>
                 <td>{cat.description}</td>
@@ -109,3 +136,5 @@ export default function CategoryPage() {
     </div>
   );
 }
+
+export default CategoryPage;

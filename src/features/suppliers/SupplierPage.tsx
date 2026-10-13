@@ -1,35 +1,44 @@
 import { useEffect, useState } from 'react';
 import { useStockitaStore } from '../../store/useStockitaStore';
 import type { Supplier } from '../../types';
-import { createSupplier, updateSupplier, deleteSupplier } from '../../db/repositories/suppliers';
+import { createSupplier, deleteSupplier, updateSupplier } from '../../db/repositories/suppliers';
 
 const empty: Partial<Supplier> = { name: '', contact: '', address: '', note: '' };
 
-export default function SupplierPage() {
+export function SupplierPage() {
   const suppliers = useStockitaStore((s) => s.suppliers);
   const initialize = useStockitaStore((s) => s.initialize);
   const [form, setForm] = useState<Partial<Supplier>>(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { initialize(); }, [initialize]);
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   const handleSave = async () => {
-    if (!form.name || !form.name.trim()) return alert('Nama supplier wajib.');
+    if (!form.name || !form.name.trim()) {
+      alert('Nama supplier wajib.');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload: Supplier = {
         id: editingId ?? crypto.randomUUID(),
-        name: form.name!.trim(),
+        name: form.name.trim(),
         contact: form.contact || '',
         address: form.address || '',
         note: form.note || '',
-        createdAt: editingId ? (suppliers.find(s => s.id === editingId)?.createdAt ?? Date.now()) : Date.now(),
+        createdAt: editingId ? suppliers.find((item) => item.id === editingId)?.createdAt ?? Date.now() : Date.now(),
         updatedAt: Date.now()
       };
 
-      if (editingId) await updateSupplier(payload);
-      else await createSupplier(payload);
+      if (editingId) {
+        await updateSupplier(payload);
+      } else {
+        await createSupplier(payload);
+      }
 
       await initialize();
       setForm(empty);
@@ -37,21 +46,31 @@ export default function SupplierPage() {
     } catch (err) {
       console.error(err);
       alert('Gagal menyimpan supplier');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEdit = (s: Supplier) => {
-    setEditingId(s.id);
-    setForm({ ...s });
+  const handleEdit = (item: Supplier) => {
+    setEditingId(item.id);
+    setForm({ ...item });
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus supplier? Produk yang memakai supplier ini akan kehilangan relasi supplier.')) return;
+    if (!confirm('Hapus supplier? Produk yang memakai supplier ini akan kehilangan relasi supplier.')) {
+      return;
+    }
+
     setLoading(true);
     try {
       await deleteSupplier(id);
       await initialize();
-    } catch (err) { console.error(err); alert('Gagal menghapus supplier'); } finally { setLoading(false); }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menghapus supplier');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,24 +80,28 @@ export default function SupplierPage() {
         <div className="form-grid">
           <label>
             Nama
-            <input value={form.name ?? ''} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <input value={form.name ?? ''} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} />
           </label>
           <label>
             Kontak
-            <input value={form.contact ?? ''} onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))} />
+            <input value={form.contact ?? ''} onChange={(e) => setForm((current) => ({ ...current, contact: e.target.value }))} />
           </label>
           <label>
             Alamat
-            <input value={form.address ?? ''} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
+            <input value={form.address ?? ''} onChange={(e) => setForm((current) => ({ ...current, address: e.target.value }))} />
           </label>
           <label className="full-width">
             Catatan
-            <textarea value={form.note ?? ''} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
+            <textarea value={form.note ?? ''} onChange={(e) => setForm((current) => ({ ...current, note: e.target.value }))} />
           </label>
         </div>
         <div className="actions-row">
-          <button className="button primary" onClick={handleSave} disabled={loading}>{editingId ? 'Simpan Perubahan' : 'Tambah Supplier'}</button>
-          <button className="button secondary" onClick={() => { setForm(empty); setEditingId(null); }} disabled={loading}>Batal</button>
+          <button className="button primary" onClick={handleSave} disabled={loading}>
+            {editingId ? 'Simpan Perubahan' : 'Tambah Supplier'}
+          </button>
+          <button className="button secondary" onClick={() => { setForm(empty); setEditingId(null); }} disabled={loading}>
+            Batal
+          </button>
         </div>
       </div>
 
@@ -89,16 +112,20 @@ export default function SupplierPage() {
         </div>
         <table className="data-table">
           <thead>
-            <tr><th>Nama</th><th>Kontak</th><th></th></tr>
+            <tr>
+              <th>Nama</th>
+              <th>Kontak</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
-            {suppliers.map(s => (
-              <tr key={s.id}>
-                <td>{s.name}</td>
-                <td>{s.contact}</td>
+            {suppliers.map((item) => (
+              <tr key={item.id}>
+                <td>{item.name}</td>
+                <td>{item.contact}</td>
                 <td>
-                  <button className="button secondary" onClick={() => handleEdit(s)}>Edit</button>
-                  <button className="button" style={{ marginLeft: 8 }} onClick={() => handleDelete(s.id)}>Hapus</button>
+                  <button className="button secondary" onClick={() => handleEdit(item)}>Edit</button>
+                  <button className="button" style={{ marginLeft: 8 }} onClick={() => handleDelete(item.id)}>Hapus</button>
                 </td>
               </tr>
             ))}
@@ -108,3 +135,5 @@ export default function SupplierPage() {
     </div>
   );
 }
+
+export default SupplierPage;

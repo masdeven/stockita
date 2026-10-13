@@ -1,5 +1,5 @@
-import { formatCurrency, getInventoryStatus } from '../lib/format';
-import { useStockitaStore } from './useStockitaStore';
+import { formatCurrency, getInventoryStatus } from '../../lib/format';
+import { useStockitaStore } from '../../store/useStockitaStore';
 
 export function DashboardPage() {
   const products = useStockitaStore((state) => state.products);
@@ -28,16 +28,19 @@ export function DashboardPage() {
           <div className="stat-value">{productCount}</div>
           <div className="stat-meta">Master data aktif</div>
         </div>
+
         <div className="stat-card">
           <div className="stat-label">Nilai Stok</div>
           <div className="stat-value">{formatCurrency(inventoryValue)}</div>
           <div className="stat-meta">Berdasarkan harga beli saat ini</div>
         </div>
+
         <div className="stat-card">
           <div className="stat-label">Stok Rendah</div>
           <div className="stat-value">{lowStockCount}</div>
           <div className="stat-meta">{emptyStockCount} habis</div>
         </div>
+
         <div className="stat-card">
           <div className="stat-label">Transaksi Hari Ini</div>
           <div className="stat-value">{todayTransactions}</div>
@@ -50,11 +53,12 @@ export function DashboardPage() {
           <div className="section-header">
             <div className="section-title">Pergerakan stok</div>
             <div className="segmented">
-              <button className="segment active">7H</button>
-              <button className="segment">30H</button>
-              <button className="segment">90H</button>
+              <button className="segment active" type="button">7H</button>
+              <button className="segment" type="button">30H</button>
+              <button className="segment" type="button">90H</button>
             </div>
           </div>
+
           <div className="chart-box">
             <div className="chart-bars">
               {[42, 58, 35, 74, 90, 52, 84].map((value, index) => (
@@ -86,8 +90,9 @@ export function DashboardPage() {
       <section className="panel">
         <div className="section-header">
           <div className="section-title">Transaksi terbaru</div>
-          <button className="text-button">Lihat semua</button>
+          <button className="text-button" type="button">Lihat semua</button>
         </div>
+
         <table className="data-table">
           <thead>
             <tr>
@@ -114,3 +119,5 @@ export function DashboardPage() {
     </div>
   );
 }
+
+export default DashboardPage;

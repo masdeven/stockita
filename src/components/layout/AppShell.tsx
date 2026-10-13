@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart3, Box, ArrowLeftRight, Settings } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, Box, Package2, Settings, Truck } from 'lucide-react';
 
 const items = [
   { to: '/', label: 'Dashboard', icon: BarChart3 },
   { to: '/products', label: 'Produk', icon: Box },
+  { to: '/categories', label: 'Kategori', icon: Package2 },
+  { to: '/suppliers', label: 'Supplier', icon: Truck },
   { to: '/transactions', label: 'Transaksi', icon: ArrowLeftRight },
   { to: '/settings', label: 'Pengaturan', icon: Settings }
 ];
@@ -41,3 +43,5 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+export default AppShell;
