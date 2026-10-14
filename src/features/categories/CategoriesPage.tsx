@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useStockitaStore } from '../../store/useStockitaStore';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -14,6 +15,7 @@ const colorOptions: { value: TokenColor; label: string; class: string }[] = [
 ];
 
 export function CategoriesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const categories = useStockitaStore((s) => s.categories);
   const products = useStockitaStore((s) => s.products);
   const addCategory = useStockitaStore((s) => s.addCategory);
@@ -37,6 +39,14 @@ export function CategoriesPage() {
     setNameError('');
     setIsModalOpen(true);
   };
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      openAddModal();
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const openEditModal = (cat: Category) => {
     setEditingCategory(cat);

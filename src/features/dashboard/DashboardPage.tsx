@@ -351,11 +351,9 @@ export function DashboardPage() {
                           {tx.type === 'in' ? 'Masuk' : tx.type === 'out' ? 'Keluar' : 'Penyesuaian'}
                         </span>
                       </td>
-                      <td>
-                        <div className="cell-product">
-                          <strong>{tx.productNameSnapshot}</strong>
-                          <small>SKU: {tx.productSkuSnapshot}</small>
-                        </div>
+                      <td className="cell-name">
+                        <strong className="dashboard-product-name">{tx.productNameSnapshot}</strong>
+                        <span className="cell-sub">SKU: {tx.productSkuSnapshot}</span>
                       </td>
                       <td className={`text-right tabular-nums ${tx.type === 'in' ? 'text-pos' : tx.type === 'out' ? 'text-neg' : ''}`}>
                         {tx.type === 'in' ? `+${tx.qty}` : tx.type === 'out' ? `-${Math.abs(tx.qty)}` : (tx.qty > 0 ? `+${tx.qty}` : tx.qty)}

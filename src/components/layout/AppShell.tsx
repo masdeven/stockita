@@ -286,6 +286,19 @@ export function AppShell({ children }: AppShellProps) {
           <button
             className="action-sheet-item"
             onClick={() => {
+              navigate('/categories?action=new');
+              setMobileAddSheetOpen(false);
+            }}
+          >
+            <Tags size={18} />
+            <div>
+              <strong>Tambah Kategori</strong>
+              <small>Buat kategori untuk mengelompokkan produk</small>
+            </div>
+          </button>
+          <button
+            className="action-sheet-item"
+            onClick={() => {
               navigate('/stock-in');
               setMobileAddSheetOpen(false);
             }}
