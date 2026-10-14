@@ -353,8 +353,9 @@ a { color: var(--text-link); text-decoration: none; }
 /* BUTTONS */
 .button {
   height: 32px;
-  padding: 0 14px;
+  padding: 6px 14px;
   font-size: 13px;
+  line-height: 18px;
   font-weight: 500;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
@@ -748,6 +749,10 @@ a { color: var(--text-link); text-decoration: none; }
 
 /* 9. DATA TABLE */
 .panel-table { padding: 0; overflow: hidden; }
+.panel-table > .section-header {
+  margin-bottom: 0;
+  padding: 16px;
+}
 .table-responsive { width: 100%; overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
 .data-table th {
@@ -1221,6 +1226,25 @@ label.file-upload-btn svg {
   .sidebar-toolbar { display: none; }
   .bottombar-shell { display: none; }
   .topbar-center { display: none; }
+  .toolbar-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .toolbar-actions-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .toolbar-actions-group > .button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .panel-table > .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .panel-table > .section-header > .button {
+    white-space: nowrap;
+  }
   .mobile-bottom-nav {
     position: fixed;
     bottom: 0;
